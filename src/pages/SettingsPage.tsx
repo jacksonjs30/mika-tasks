@@ -1,11 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Settings, Bell, User, Bot, Shield, Archive } from 'lucide-react'
 import { useStore } from '../store/useStore'
 
 export default function SettingsPage() {
-  const { currentUser, updateUser, archiveOldTasks } = useStore()
-  const [telegramId, setTelegramId] = useState(currentUser.telegram_id || '')
+  const { currentUser, updateUser, archiveOldTasks, loading } = useStore()
+  const [telegramId, setTelegramId] = useState('')
   const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (currentUser?.telegram_id) {
+      setTelegramId(currentUser.telegram_id)
+    }
+  }, [currentUser])
+
+  if (loading && !currentUser) {
+    return <div className="welcome">Загрузка настроек...</div>
+  }
+
+  if (!currentUser) return null
 
   function handleSave() {
     updateUser({ telegram_id: telegramId || undefined })
@@ -166,25 +178,23 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Суpabase */}
+        {/* Supabase */}
         <div className="settings-section">
           <h3 className="settings-section-title">
             <Shield size={15} /> Supabase / Backend
           </h3>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-            Сейчас приложение работает в режиме <b>локальных данных</b> (Zustand store).
+            Приложение поддерживает синхронизацию с <b>Supabase</b>.
             <br />
-            Для синхронизации с базой данных подключите Supabase:
+            Для подключения:
             <br />
-            1. Создайте проект на <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> (бесплатно)
+            1. Создайте проект на <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a>
             <br />
-            2. Скопируйте <b>URL</b> и <b>anon key</b> из настроек проекта
-            <br />
-            3. Вставьте их в файл <code style={{ background: 'var(--bg-surface-3)', padding: '2px 6px', borderRadius: 4 }}>.env</code>
+            2. Скопируйте <b>URL</b> и <b>anon key</b> в файл <code style={{ background: 'var(--bg-surface-3)', padding: '2px 6px', borderRadius: 4 }}>.env</code>
           </div>
           <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--bg-surface-3)', borderRadius: 'var(--radius)', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
-            VITE_SUPABASE_URL=https://xxxxx.supabase.co<br />
-            VITE_SUPABASE_ANON_KEY=eyJhbGci...
+            VITE_SUPABASE_URL={import.meta.env.VITE_SUPABASE_URL || 'https://xxxxx.supabase.co'}<br />
+            VITE_SUPABASE_ANON_KEY={import.meta.env.VITE_SUPABASE_ANON_KEY ? 'ПОДКЛЮЧЕНО (скрыто)' : 'ОТСУТСТВУЕТ'}
           </div>
         </div>
       </div>

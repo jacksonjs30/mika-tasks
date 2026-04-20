@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { LayoutGrid, GanttChart, StickyNote, Plus, Filter } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import KanbanView from './kanban/KanbanView'
@@ -10,18 +11,43 @@ import type { Task, TaskDepartment, TaskPriority } from '../types'
 type ViewTab = 'kanban' | 'gantt' | 'notes'
 
 export default function ProjectView() {
-  const { projects, activeProjectId, tasks } = useStore()
+  const { projectId } = useParams()
+  const navigate = useNavigate()
+  const { projects, tasks, setActiveProject, loading } = useStore()
+  
   const [activeTab, setActiveTab] = useState<ViewTab>('kanban')
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [filterDept, setFilterDept] = useState<TaskDepartment | 'all'>('all')
   const [filterPriority, setFilterPriority] = useState<TaskPriority | 'all'>('all')
 
-  const project = projects.find(p => p.id === activeProjectId)
-  if (!project) return null
+  // Sync store with URL
+  useEffect(() => {
+    if (projectId) {
+      setActiveProject(projectId)
+    }
+  }, [projectId, setActiveProject])
+
+  const project = projects.find(p => p.id === projectId)
+
+  // Redirect if project not found (and not loading)
+  useEffect(() => {
+    if (!loading && projects.length > 0 && !project && projectId) {
+      navigate('/welcome')
+    }
+  }, [project, loading, projects.length, navigate, projectId])
+
+  if (!project) {
+    return (
+      <div className="welcome">
+        <div style={{ fontSize: 40, marginBottom: 20 }}>🔍</div>
+        <div>Проект не найден...</div>
+      </div>
+    )
+  }
 
   const projectTasks = tasks.filter(t =>
-    t.project_id === activeProjectId &&
+    t.project_id === project.id &&
     t.status !== 'archived' &&
     (filterDept === 'all' || t.department === filterDept) &&
     (filterPriority === 'all' || t.priority === filterPriority)
@@ -133,8 +159,13 @@ export default function ProjectView() {
         </div>
       )}
 
-      {/* Main view */}
-      <div className="content-area">
+      {/* Main view Area */}
+      <div className="content-area" style={{ position: 'relative' }}>
+        {loading && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+            <span>Обновление...</span>
+          </div>
+        )}
         {activeTab === 'kanban' && (
           <KanbanView
             tasks={projectTasks}
@@ -145,7 +176,7 @@ export default function ProjectView() {
         {activeTab === 'gantt' && (
           <GanttView
             tasks={projectTasks}
-            allProjectTasks={tasks.filter(t => t.project_id === activeProjectId && t.status !== 'archived')}
+            allProjectTasks={tasks.filter(t => t.project_id === project.id && t.status !== 'archived')}
             onTaskClick={openEditTask}
           />
         )}

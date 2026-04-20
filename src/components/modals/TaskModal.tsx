@@ -3,6 +3,8 @@ import { X, Calendar, Bell } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import type { Task, TaskStatus, TaskDepartment, TaskPriority } from '../../types'
 import { STATUS_CONFIG, DEPARTMENT_CONFIG, PRIORITY_CONFIG } from '../../types'
+import { Avatar } from '../Avatar'
+import { User as UserIcon, History } from 'lucide-react'
 
 interface Props {
   task: Task | null
@@ -21,10 +23,11 @@ const defaultForm = () => ({
   remind_at: '',
   notify_desktop: true,
   notify_telegram: false,
+  assignee_id: '' as string,
 })
 
 export default function TaskModal({ task, projectId, onClose }: Props) {
-  const { addTask, updateTask, deleteTask, currentUser } = useStore()
+  const { addTask, updateTask, deleteTask, currentUser, allUsers, getTaskHistory } = useStore()
   const [form, setForm] = useState(defaultForm())
   const isNew = !task
 
@@ -39,11 +42,21 @@ export default function TaskModal({ task, projectId, onClose }: Props) {
         start_date: task.start_date || '',
         end_date: task.end_date || '',
         remind_at: task.remind_at || '',
-        notify_desktop: currentUser.notify_desktop,
-        notify_telegram: currentUser.notify_telegram,
+        notify_desktop: currentUser?.notify_desktop ?? true,
+        notify_telegram: currentUser?.notify_telegram ?? false,
+        assignee_id: task.assignee_id || '',
       })
     }
-  }, [task])
+  }, [task, currentUser])
+
+  const [activeTab, setActiveTab] = useState<'general' | 'history'>('general')
+  const [history, setHistory] = useState<any[]>([])
+
+  useEffect(() => {
+    if (activeTab === 'history' && task) {
+      getTaskHistory(task.id).then(setHistory)
+    }
+  }, [activeTab, task, getTaskHistory])
 
   function set(field: string, value: string | boolean) {
     setForm(f => ({ ...f, [field]: value }))
@@ -63,6 +76,7 @@ export default function TaskModal({ task, projectId, onClose }: Props) {
         start_date: form.start_date || undefined,
         end_date: form.end_date || undefined,
         remind_at: form.remind_at || undefined,
+        assignee_id: form.assignee_id || undefined,
         order: 0,
       })
     } else {
@@ -75,6 +89,7 @@ export default function TaskModal({ task, projectId, onClose }: Props) {
         start_date: form.start_date || undefined,
         end_date: form.end_date || undefined,
         remind_at: form.remind_at || undefined,
+        assignee_id: form.assignee_id || undefined,
       })
 
       // Schedule desktop notification if needed
@@ -102,10 +117,33 @@ export default function TaskModal({ task, projectId, onClose }: Props) {
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal task-modal">
-        <div className="modal-header">
+        <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <h2 className="modal-title">{isNew ? 'Новая задача' : 'Редактирование задачи'}</h2>
           <button className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
+
+        {/* Tabs */}
+        {!isNew && (
+          <div className="topbar-tabs" style={{ margin: '16px 0 24px', background: 'var(--bg-surface-2)', padding: 4 }}>
+            <button 
+              className={`topbar-tab ${activeTab === 'general' ? 'active' : ''}`}
+              onClick={() => setActiveTab('general')}
+              style={{ flex: 1, padding: '8px' }}
+            >
+              <UserIcon size={14} /> Общее
+            </button>
+            <button 
+              className={`topbar-tab ${activeTab === 'history' ? 'active' : ''}`}
+              onClick={() => setActiveTab('history')}
+              style={{ flex: 1, padding: '8px' }}
+            >
+              <History size={14} /> История
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'general' ? (
+          <>
 
         {/* Title */}
         <div className="form-group">
@@ -131,8 +169,8 @@ export default function TaskModal({ task, projectId, onClose }: Props) {
           />
         </div>
 
-        {/* Status + Department */}
-        <div className="form-row">
+        {/* Status + Department + Assignee */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">Статус</label>
             <select className="input" value={form.status} onChange={e => set('status', e.target.value)}>
@@ -148,6 +186,15 @@ export default function TaskModal({ task, projectId, onClose }: Props) {
             <select className="input" value={form.department} onChange={e => set('department', e.target.value)}>
               {Object.entries(DEPARTMENT_CONFIG).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Исполнитель</label>
+            <select className="input" value={form.assignee_id} onChange={e => set('assignee_id', e.target.value)}>
+              <option value="">Не назначен</option>
+              {allUsers.map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
           </div>
@@ -239,6 +286,32 @@ export default function TaskModal({ task, projectId, onClose }: Props) {
               />
               ✈️ Telegram
             </label>
+          </div>
+        )}
+        </>
+        ) : (
+          /* History Tab */
+          <div className="flex-col gap-4" style={{ minHeight: 300, maxHeight: 400, overflowY: 'auto', paddingRight: 8 }}>
+            {history.length === 0 ? (
+              <div className="text-muted text-sm" style={{ textAlign: 'center', marginTop: 40 }}>История пуста</div>
+            ) : (
+              history.map(item => {
+                const user = allUsers.find(u => u.id === item.user_id)
+                return (
+                  <div key={item.id} className="flex gap-3 items-start" style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                    <Avatar name={user?.name} src={user?.avatar_url} size={24} />
+                    <div className="flex-col gap-1">
+                      <div className="text-sm font-medium">
+                        {user?.name || 'Система'} <span className="text-muted" style={{ fontWeight: 400 }}>{item.description || 'изменил задачу'}</span>
+                      </div>
+                      <div className="text-xs text-muted">
+                        {new Date(item.created_at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            )}
           </div>
         )}
 

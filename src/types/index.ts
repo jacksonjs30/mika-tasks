@@ -9,6 +9,7 @@ export interface User {
   id: string
   name: string
   email: string
+  avatar_url?: string
   telegram_id?: string
   timezone: string
   role: UserRole
@@ -33,6 +34,7 @@ export interface Project {
 export interface Task {
   id: string
   project_id: string
+  assignee_id?: string
   title: string
   description?: string
   status: TaskStatus
@@ -77,15 +79,26 @@ export interface ProjectMember {
   role: UserRole
 }
 
+export interface TaskHistory {
+  id: string
+  task_id: string
+  user_id?: string
+  action_type: 'status_change' | 'move' | 'assign' | 'update' | 'create'
+  from_value?: string
+  to_value?: string
+  description?: string
+  created_at: string
+}
+
 // UI helpers
 export const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; bg: string }> = {
-  backlog: { label: 'Бэклог', color: '#94a3b8', bg: '#1e293b' },
-  planned: { label: 'Запланировано', color: '#60a5fa', bg: '#1e3a5f' },
-  in_progress: { label: 'В работе', color: '#a78bfa', bg: '#2d1b69' },
-  blocked: { label: 'Заблокировано', color: '#f87171', bg: '#450a0a' },
-  review: { label: 'Проверка', color: '#fb923c', bg: '#431407' },
-  done: { label: 'Готово', color: '#4ade80', bg: '#052e16' },
-  archived: { label: 'Архив', color: '#64748b', bg: '#0f172a' },
+  backlog: { label: 'Бэклог', color: '#64748b', bg: '#f1f5f9' },
+  planned: { label: 'Запланировано', color: '#2563eb', bg: '#dbeafe' },
+  in_progress: { label: 'В работе', color: '#7c3aed', bg: '#ede9fe' },
+  blocked: { label: 'Заблокировано', color: '#dc2626', bg: '#fee2e2' },
+  review: { label: 'Проверка', color: '#ea580c', bg: '#ffedd5' },
+  done: { label: 'Готово', color: '#16a34a', bg: '#dcfce7' },
+  archived: { label: 'Архив', color: '#475569', bg: '#f1f5f9' },
 }
 
 export const DEPARTMENT_CONFIG: Record<TaskDepartment, { label: string; short: string; color: string; bg: string }> = {

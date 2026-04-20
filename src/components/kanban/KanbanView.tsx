@@ -1,11 +1,6 @@
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
-import type { DropResult } from '@hello-pangea/dnd'
-import { Plus, Calendar, Bell, AlertTriangle } from 'lucide-react'
-import { useStore } from '../../store/useStore'
-import type { Task, TaskStatus } from '../../types'
-import { KANBAN_COLUMNS, STATUS_CONFIG, DEPARTMENT_CONFIG, PRIORITY_CONFIG } from '../../types'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { Avatar } from '../Avatar'
 
 interface Props {
   tasks: Task[]
@@ -14,7 +9,7 @@ interface Props {
 }
 
 export default function KanbanView({ tasks, onTaskClick, onAddTask }: Props) {
-  const { moveTask } = useStore()
+  const { moveTask, allUsers } = useStore()
 
   function onDragEnd(result: DropResult) {
     if (!result.destination) return
@@ -123,6 +118,14 @@ export default function KanbanView({ tasks, onTaskClick, onAddTask }: Props) {
                                   </span>
                                 )}
                               </div>
+
+                              {task.assignee_id && (
+                                <Avatar 
+                                  name={allUsers.find(u => u.id === task.assignee_id)?.name} 
+                                  src={allUsers.find(u => u.id === task.assignee_id)?.avatar_url} 
+                                  size={22} 
+                                />
+                              )}
                             </div>
                           </div>
                         )}

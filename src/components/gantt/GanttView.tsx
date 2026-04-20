@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { format, addDays, startOfDay, differenceInDays, isToday, isWeekend, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { CalendarDays, Calendar } from 'lucide-react'
@@ -35,13 +35,17 @@ export default function GanttView({ tasks, allProjectTasks, onTaskClick }: Props
 
   function barStyle(task: Task) {
     if (!task.start_date || !task.end_date) return {}
-    const left = dayOffset(task.start_date) * DAY_WIDTH
+    let left = dayOffset(task.start_date) * DAY_WIDTH
+    if (dragOffset?.taskId === task.id) {
+      left += dragOffset.days * DAY_WIDTH
+    }
     const width = Math.max((differenceInDays(parseISO(task.end_date), parseISO(task.start_date)) + 1) * DAY_WIDTH, DAY_WIDTH)
     const deptCfg = DEPARTMENT_CONFIG[task.department]
     return { left, width, background: deptCfg.color }
   }
 
   // Dragging bar
+  const [dragOffset, setDragOffset] = useState<{ taskId: string; days: number } | null>(null)
   const dragState = useRef<{ taskId: string; startX: number; origStart: string; origEnd: string } | null>(null)
 
   function onBarMouseDown(e: React.MouseEvent, task: Task) {
@@ -60,14 +64,17 @@ export default function GanttView({ tasks, allProjectTasks, onTaskClick }: Props
     if (!dragState.current) return
     const dx = e.clientX - dragState.current.startX
     const daysDelta = Math.round(dx / DAY_WIDTH)
-    if (daysDelta === 0) return
-    const newStart = format(addDays(parseISO(dragState.current.origStart), daysDelta), 'yyyy-MM-dd')
-    const newEnd = format(addDays(parseISO(dragState.current.origEnd), daysDelta), 'yyyy-MM-dd')
-    updateTask(dragState.current.taskId, { start_date: newStart, end_date: newEnd })
+    setDragOffset({ taskId: dragState.current.taskId, days: daysDelta })
   }
 
-  function onBarMouseUp() {
+  async function onBarMouseUp() {
+    if (dragState.current && dragOffset && dragOffset.days !== 0) {
+      const newStart = format(addDays(parseISO(dragState.current.origStart), dragOffset.days), 'yyyy-MM-dd')
+      const newEnd = format(addDays(parseISO(dragState.current.origEnd), dragOffset.days), 'yyyy-MM-dd')
+      await updateTask(dragState.current.taskId, { start_date: newStart, end_date: newEnd })
+    }
     dragState.current = null
+    setDragOffset(null)
     window.removeEventListener('mousemove', onBarMouseMove)
     window.removeEventListener('mouseup', onBarMouseUp)
   }

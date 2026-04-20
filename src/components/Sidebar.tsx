@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Archive, Settings, Plus, Pin, ChevronDown, ChevronRight, Trash2, Pencil
 } from 'lucide-react'
@@ -6,51 +7,49 @@ import { useStore } from '../store/useStore'
 import type { Project } from '../types'
 import ProjectModal from './modals/ProjectModal'
 
-interface Props {
-  onNavigate: (page: 'project' | 'archive' | 'settings') => void
-  currentPage: string
-}
-
-export default function Sidebar({ onNavigate, currentPage }: Props) {
-  const { projects, activeProjectId, setActiveProject, deleteProject, updateProject } = useStore()
+export default function Sidebar() {
+  const { projects, deleteProject, updateProject } = useStore()
   const [projectsOpen, setProjectsOpen] = useState(true)
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const navigate = useNavigate()
 
   const pinned = projects.filter(p => p.is_pinned).sort((a, b) => a.position - b.position)
   const unpinned = projects.filter(p => !p.is_pinned).sort((a, b) => a.position - b.position)
 
   function handleSelectProject(id: string) {
-    setActiveProject(id)
-    onNavigate('project')
+    navigate(`/project/${id}`)
   }
 
   function handlePin(e: React.MouseEvent, p: Project) {
+    e.preventDefault()
     e.stopPropagation()
     updateProject(p.id, { is_pinned: !p.is_pinned })
   }
 
   function handleEdit(e: React.MouseEvent, p: Project) {
+    e.preventDefault()
     e.stopPropagation()
     setEditingProject(p)
     setShowProjectModal(true)
   }
 
   function handleDelete(e: React.MouseEvent, id: string) {
+    e.preventDefault()
     e.stopPropagation()
     if (confirm('Удалить проект? Все задачи и заметки будут удалены.')) {
       deleteProject(id)
-      onNavigate('project')
+      navigate('/welcome')
     }
   }
 
   return (
     <aside className="sidebar">
       {/* Logo */}
-      <div className="sidebar-logo">
+      <NavLink to="/" className="sidebar-logo" style={{ textDecoration: 'none' }}>
         <div className="sidebar-logo-icon">📋</div>
-        <span className="sidebar-logo-text">Задачник</span>
-      </div>
+        <span className="sidebar-logo-text">Mika Tasks</span>
+      </NavLink>
 
       {/* Pinned projects */}
       {pinned.length > 0 && (
@@ -61,7 +60,6 @@ export default function Sidebar({ onNavigate, currentPage }: Props) {
               <ProjectNavItem
                 key={p.id}
                 project={p}
-                active={activeProjectId === p.id && currentPage === 'project'}
                 onSelect={handleSelectProject}
                 onPin={handlePin}
                 onEdit={handleEdit}
@@ -90,7 +88,6 @@ export default function Sidebar({ onNavigate, currentPage }: Props) {
                 <ProjectNavItem
                   key={p.id}
                   project={p}
-                  active={activeProjectId === p.id && currentPage === 'project'}
                   onSelect={handleSelectProject}
                   onPin={handlePin}
                   onEdit={handleEdit}
@@ -113,20 +110,14 @@ export default function Sidebar({ onNavigate, currentPage }: Props) {
       {/* Bottom nav */}
       <div className="sidebar-bottom">
         <nav className="sidebar-nav">
-          <button
-            className={`sidebar-nav-item ${currentPage === 'archive' ? 'active' : ''}`}
-            onClick={() => onNavigate('archive')}
-          >
+          <NavLink to="/archive" className={({ isActive }) => `sidebar-nav-item ${isActive ? 'active' : ''}`}>
             <Archive size={15} />
             <span>Архив задач</span>
-          </button>
-          <button
-            className={`sidebar-nav-item ${currentPage === 'settings' ? 'active' : ''}`}
-            onClick={() => onNavigate('settings')}
-          >
+          </NavLink>
+          <NavLink to="/settings" className={({ isActive }) => `sidebar-nav-item ${isActive ? 'active' : ''}`}>
             <Settings size={15} />
             <span>Настройки</span>
-          </button>
+          </NavLink>
         </nav>
       </div>
 
@@ -144,23 +135,22 @@ export default function Sidebar({ onNavigate, currentPage }: Props) {
 /* ─── Project Nav Item ──────────────────────────────────────────── */
 interface ItemProps {
   project: Project
-  active: boolean
   onSelect: (id: string) => void
   onPin: (e: React.MouseEvent, p: Project) => void
   onEdit: (e: React.MouseEvent, p: Project) => void
   onDelete: (e: React.MouseEvent, id: string) => void
 }
 
-function ProjectNavItem({ project, active, onSelect, onPin, onEdit, onDelete }: ItemProps) {
+function ProjectNavItem({ project, onSelect, onPin, onEdit, onDelete }: ItemProps) {
   const [hovered, setHovered] = useState(false)
 
   return (
-    <div
-      className={`sidebar-nav-item ${active ? 'active' : ''}`}
-      onClick={() => onSelect(project.id)}
+    <NavLink
+      to={`/project/${project.id}`}
+      className={({ isActive }) => `sidebar-nav-item ${isActive ? 'active' : ''}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ justifyContent: 'space-between' }}
+      style={{ justifyContent: 'space-between', textDecoration: 'none' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
         {project.emoji ? (
@@ -177,7 +167,6 @@ function ProjectNavItem({ project, active, onSelect, onPin, onEdit, onDelete }: 
             className="btn-icon"
             style={{ padding: 2 }}
             onClick={(e) => onPin(e, project)}
-            data-tooltip={project.is_pinned ? 'Открепить' : 'Закрепить'}
           >
             <Pin size={11} className={project.is_pinned ? 'text-accent' : ''} />
           </button>
@@ -197,6 +186,6 @@ function ProjectNavItem({ project, active, onSelect, onPin, onEdit, onDelete }: 
           </button>
         </div>
       )}
-    </div>
+    </NavLink>
   )
 }
