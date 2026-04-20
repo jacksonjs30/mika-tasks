@@ -15,4 +15,5 @@ if (
   supabase = createClient(supabaseUrl, supabaseAnonKey)
 }
 
-export const isSupabaseEnabled = supabase !== null
+// Temporarily disabled for local work as requested
+export const isSupabaseEnabled = false
