@@ -1,5 +1,19 @@
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { 
+  DragDropContext, 
+  Droppable, 
+  Draggable, 
+  DropResult, 
+  DroppableProvided, 
+  DroppableStateSnapshot,
+  DraggableProvided,
+  DraggableStateSnapshot
+} from '@hello-pangea/dnd'
+import { AlertTriangle, Calendar, Bell, Plus } from 'lucide-react'
+import { useStore } from '../../store/useStore'
+import type { Task, TaskStatus } from '../../types'
+import { STATUS_CONFIG, KANBAN_COLUMNS, DEPARTMENT_CONFIG, PRIORITY_CONFIG } from '../../types'
 import { Avatar } from '../Avatar'
 
 interface Props {
@@ -43,7 +57,7 @@ export default function KanbanView({ tasks, onTaskClick, onAddTask }: Props) {
 
               {/* Drop zone */}
               <Droppable droppableId={status}>
-                {(provided, snapshot) => (
+                {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
@@ -51,7 +65,7 @@ export default function KanbanView({ tasks, onTaskClick, onAddTask }: Props) {
                   >
                     {colTasks.map((task, index) => (
                       <Draggable key={task.id} draggableId={task.id} index={index}>
-                        {(provided, snapshot) => (
+                        {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}

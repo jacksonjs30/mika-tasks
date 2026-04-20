@@ -318,7 +318,7 @@ export default function TaskModal({ task, projectId, onClose }: Props) {
         {/* Footer */}
         <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 8 }}>
-            {!isNew && currentUser.role === 'admin' && (
+            {!isNew && currentUser?.role === 'admin' && (
               <>
                 <button className="btn btn-ghost btn-sm" onClick={handleArchive}>
                   📦 В архив

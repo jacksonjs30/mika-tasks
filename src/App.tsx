@@ -16,7 +16,6 @@ export default function App() {
     fetchInitialData, 
     loading, 
     session, 
-    currentUser, 
     useSupabase 
   } = useStore()
 

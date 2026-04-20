@@ -84,6 +84,7 @@ interface AppState {
   currentUser: User | null
   session: Session | null
   projects: Project[]
+  tasks: Task[]
   notes: Note[]
   allUsers: User[]
   activeProjectId: string | null
@@ -394,10 +395,13 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateUser: async (u) => {
+    const s = get()
+    if (!s.currentUser) return
+    
     if (isSupabaseEnabled) {
-      await dataService.updateProfile(get().currentUser.id, u)
+      await dataService.updateProfile(s.currentUser.id, u)
     }
-    set((s) => ({ currentUser: { ...s.currentUser, ...u } }))
+    set((state) => ({ currentUser: state.currentUser ? { ...state.currentUser, ...u } : null }))
   },
 
   archiveOldTasks: async () => {
